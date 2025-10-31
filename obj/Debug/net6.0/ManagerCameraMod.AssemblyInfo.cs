@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ManagerCameraMod")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4da63bc727886e7dffb9adcc35ef6d762d1a4d7b")]
 [assembly: System.Reflection.AssemblyProductAttribute("Manager Camera mod")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ManagerCameraMod")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

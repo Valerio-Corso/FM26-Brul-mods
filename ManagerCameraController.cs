@@ -17,6 +17,21 @@ public class ManagerCameraController : MonoBehaviour
     public KeyCode activationKey = KeyCode.F1;
     public Vector3 cameraLocalOffset = new Vector3(0f, 1.6f, .3f);
 
+    // Mouse look settings
+    public int panMouseButton = 1;
+    public float mouseSensitivity = 1.0f;
+    public bool lockCursorWhilePanning = true;
+
+    // Zoom settings
+    public bool enableZoom = true;
+    public float zoomSpeed = 5f;
+    public float minFov = 60f;
+    public float maxFov = 110;
+
+    // Internal mouse look state
+    private float _yaw;
+    private bool _isPanning;
+
     private ManualLogSource _logger;
 
     private Transform _manager;
@@ -35,6 +50,19 @@ public class ManagerCameraController : MonoBehaviour
     private System.Reflection.PropertyInfo _currentInput;
     private System.Reflection.PropertyInfo _currentInputItem;
     private System.Reflection.PropertyInfo _currentInputWasPressed;
+
+    // Mouse reflection caches (Unity Input System)
+    private System.Type _tMouse;
+    private System.Type _tButtonControl;
+    private System.Type _tVector2Control;
+    private System.Reflection.PropertyInfo _mouseCurrent;
+    private System.Reflection.PropertyInfo _mouseRightButton;
+    private System.Reflection.PropertyInfo _mouseDelta;
+    private System.Reflection.PropertyInfo _mouseScroll;
+    private System.Reflection.PropertyInfo _buttonIsPressed;
+    private System.Reflection.PropertyInfo _buttonWasPressedThisFrame;
+    private System.Reflection.PropertyInfo _buttonWasReleasedThisFrame;
+    private System.Reflection.MethodInfo _vector2ReadValue;
     
 
     public void Init(ManualLogSource logger)
@@ -84,20 +112,73 @@ public class ManagerCameraController : MonoBehaviour
                 EnableCustomCamera();
         }
 
-        // While active, keep aiming at the ball; if anything disappears, auto-deactivate
+        // While active, allow right-mouse-button panning; keep camera anchored to Manager
         if (_customCameraActive)
         {
-            if (_customCamera == null || _manager == null || _ball == null)
+            if (_customCamera == null || _manager == null)
             {
                 _logger.LogWarning("ManagerCameraBootstrap: Required reference lost; deactivating our camera.");
                 DisableCustomCamera(false);
                 return;
             }
 
-            _customCamera.transform.LookAt(_ball);
+            // Begin panning on RMB down (InputSystem-reflection first, legacy fallback)
+            if (MouseRightDown())
+            {
+                _isPanning = true;
+                // initialize from current local rotation in case it changed externally
+                var e = _customCamera.transform.localEulerAngles;
+                _yaw = e.y;
+                if (lockCursorWhilePanning)
+                {
+                    Cursor.lockState = CursorLockMode.Locked;
+                    Cursor.visible = false;
+                }
+            }
+
+            // End panning on RMB up
+            if (MouseRightUp())
+            {
+                _isPanning = false;
+                if (lockCursorWhilePanning)
+                {
+                    Cursor.lockState = CursorLockMode.None;
+                    Cursor.visible = true;
+                }
+            }
+
+            // While holding RMB, update yaw from mouse delta (horizontal pan only)
+            if (MouseRightHeld())
+            {
+                var delta = GetMouseDelta();
+                float mouseX = delta.x * mouseSensitivity;
+                _yaw += mouseX;
+                _customCamera.transform.localRotation = Quaternion.Euler(0f, _yaw, 0f);
+            }
+
+            // Optional zoom via mouse wheel
+            if (enableZoom && _customCamera != null)
+            {
+                float scrollY = GetScrollY();
+                if (Mathf.Abs(scrollY) > 0.0001f)
+                {
+                    // Normalize: legacy returns ~0.1 per notch; InputSystem often returns 120 per notch
+                    if (Mathf.Abs(scrollY) > 10f) scrollY /= 120f;
+                    var fov = _customCamera.fieldOfView - scrollY * zoomSpeed;
+                    _customCamera.fieldOfView = Mathf.Clamp(fov, minFov, maxFov);
+                }
+            }
         }
     }
-    
+
+
+    private static float NormalizeAngle(float angle)
+    {
+        angle %= 360f;
+        if (angle > 180f) angle -= 360f;
+        if (angle < -180f) angle += 360f;
+        return angle;
+    }
 
     // TODO: Ugly reflection, ideally i would use Unity's InputSystem API directly', not sure why that's not working
     private bool TryInitInputSystem()
@@ -125,10 +206,45 @@ public class ManagerCameraController : MonoBehaviour
         }
     }
 
+    private bool TryInitMouseInput()
+    {
+        if (_tMouse != null && _tButtonControl != null && _tVector2Control != null &&
+            _mouseCurrent != null && _mouseRightButton != null && _mouseDelta != null && _mouseScroll != null &&
+            _buttonIsPressed != null && _buttonWasPressedThisFrame != null && _buttonWasReleasedThisFrame != null)
+            return true;
+
+        try
+        {
+            _tMouse = System.Type.GetType("UnityEngine.InputSystem.Mouse, Unity.InputSystem");
+            _tButtonControl = System.Type.GetType("UnityEngine.InputSystem.Controls.ButtonControl, Unity.InputSystem");
+            _tVector2Control = System.Type.GetType("UnityEngine.InputSystem.Controls.Vector2Control, Unity.InputSystem");
+            if (_tMouse == null || _tButtonControl == null || _tVector2Control == null)
+                return false;
+
+            _mouseCurrent = _tMouse.GetProperty("current", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            _mouseRightButton = _tMouse.GetProperty("rightButton", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            _mouseDelta = _tMouse.GetProperty("delta", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            _mouseScroll = _tMouse.GetProperty("scroll", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+
+            _buttonIsPressed = _tButtonControl.GetProperty("isPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            _buttonWasPressedThisFrame = _tButtonControl.GetProperty("wasPressedThisFrame", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            _buttonWasReleasedThisFrame = _tButtonControl.GetProperty("wasReleasedThisFrame", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+
+            _vector2ReadValue = _tVector2Control.GetMethod("ReadValue", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, new System.Type[] { });
+
+            return _mouseCurrent != null && _mouseRightButton != null && _mouseDelta != null && _mouseScroll != null &&
+                   _buttonIsPressed != null && _buttonWasPressedThisFrame != null && _buttonWasReleasedThisFrame != null &&
+                   _vector2ReadValue != null;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private bool NewInputWasPressedThisFrame(KeyCode keyCode)
     {
         if (!TryInitInputSystem()) return false;
-
 
         var keyboard = _currentInput.GetValue(null, null);
         if (keyboard == null) return false;
@@ -158,6 +274,100 @@ public class ManagerCameraController : MonoBehaviour
         var value = _currentInputWasPressed.GetValue(keyControl, null);
         return value is bool b && b;
     }
+
+    private bool MouseRightHeld()
+    {
+        if (TryInitMouseInput())
+        {
+            var mouse = _mouseCurrent.GetValue(null, null);
+            if (mouse != null)
+            {
+                var rb = _mouseRightButton.GetValue(mouse, null);
+                if (rb != null)
+                {
+                    var v = _buttonIsPressed.GetValue(rb, null);
+                    if (v is bool b) return b;
+                }
+            }
+        }
+        // Fallback to legacy
+        return Input.GetMouseButton(panMouseButton);
+    }
+
+    private bool MouseRightDown()
+    {
+        if (TryInitMouseInput())
+        {
+            var mouse = _mouseCurrent.GetValue(null, null);
+            if (mouse != null)
+            {
+                var rb = _mouseRightButton.GetValue(mouse, null);
+                if (rb != null)
+                {
+                    var v = _buttonWasPressedThisFrame.GetValue(rb, null);
+                    if (v is bool b) return b;
+                }
+            }
+        }
+        return Input.GetMouseButtonDown(panMouseButton);
+    }
+
+    private bool MouseRightUp()
+    {
+        if (TryInitMouseInput())
+        {
+            var mouse = _mouseCurrent.GetValue(null, null);
+            if (mouse != null)
+            {
+                var rb = _mouseRightButton.GetValue(mouse, null);
+                if (rb != null)
+                {
+                    var v = _buttonWasReleasedThisFrame.GetValue(rb, null);
+                    if (v is bool b) return b;
+                }
+            }
+        }
+        return Input.GetMouseButtonUp(panMouseButton);
+    }
+
+    private Vector2 GetMouseDelta()
+    {
+        if (TryInitMouseInput())
+        {
+            var mouse = _mouseCurrent.GetValue(null, null);
+            if (mouse != null)
+            {
+                var delta = _mouseDelta.GetValue(mouse, null);
+                if (delta != null)
+                {
+                    var v = _vector2ReadValue.Invoke(delta, null);
+                    if (v is Vector2 vec2) return vec2;
+                }
+            }
+        }
+        // Legacy fallback
+        return new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
+    }
+
+    private float GetScrollY()
+    {
+        if (TryInitMouseInput())
+        {
+            var mouse = _mouseCurrent.GetValue(null, null);
+            if (mouse != null)
+            {
+                var scroll = _mouseScroll.GetValue(mouse, null);
+                if (scroll != null)
+                {
+                    var v = _vector2ReadValue.Invoke(scroll, null);
+                    if (v is Vector2 vec2) return vec2.y;
+                }
+            }
+        }
+        // Legacy fallback
+        // Prefer mouseScrollDelta if available; otherwise axis
+        try { return Input.mouseScrollDelta.y; } catch { return Input.GetAxis("Mouse ScrollWheel"); }
+    }
     
     private void EnableCustomCamera()
     {
@@ -178,6 +388,8 @@ public class ManagerCameraController : MonoBehaviour
             
             var managerGo = GameObject.Find(ManagerPath);
             _manager = managerGo != null ? managerGo.transform : null;
+            
+            managerGo.GetComponent<FM.Match.AnimatorCharacterVisuals3D>().
 
             var ballGo = GameObject.Find(BallPath);
             _ball = ballGo != null ? ballGo.transform : null;
@@ -187,11 +399,7 @@ public class ManagerCameraController : MonoBehaviour
                 _logger.LogWarning($"ManagerCameraBootstrap: Activate failed — Manager not found'.");
                 return;
             }
-            if (_ball == null)
-            {
-                _logger.LogWarning($"ManagerCameraBootstrap: Activate failed — Ball not found at path '{BallPath}'.");
-                return;
-            }
+            // Ball is optional for this mode; we no longer track it
 
             // Create camera
             if (_customCamera == null)
@@ -226,11 +434,13 @@ public class ManagerCameraController : MonoBehaviour
                 }
             }
 
-            // Parent and orient camera relative to the Manager and aim at the ball
+            // Parent and orient camera relative to the Manager; user will pan with RMB
             _customCamera.transform.SetParent(_manager, worldPositionStays: true);
             _customCamera.transform.localPosition = cameraLocalOffset;
             _customCamera.transform.localRotation = Quaternion.identity;
-            _customCamera.transform.LookAt(_ball);
+            // Initialize yaw/pitch from current local rotation
+            var eul = _customCamera.transform.localEulerAngles;
+            _yaw = eul.y;
 
             // Enable camera and disable the game's camera to avoid double rendering
             if (_lastMainCamera != null)
@@ -241,7 +451,7 @@ public class ManagerCameraController : MonoBehaviour
             _customCamera.gameObject.SetActive(true);
             _customCamera.enabled = true;
             _customCameraActive = true;
-            _logger.LogInfo("ManagerCameraBootstrap: Custom camera activated (tracking Ball). Press key again to restore.");
+            _logger.LogInfo("ManagerCameraBootstrap: Custom camera activated (RMB to pan, anchored to Manager). Press key again to restore.");
         }
         catch (System.Exception ex)
         {
@@ -254,6 +464,14 @@ public class ManagerCameraController : MonoBehaviour
     {
         try
         {
+            // Ensure cursor is unlocked when disabling
+            if (lockCursorWhilePanning)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+            _isPanning = false;
+
             // Disable camera but keep it around for reuse
             if (_customCamera != null)
             {

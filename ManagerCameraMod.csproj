@@ -36,6 +36,9 @@
     <Reference Include="FM.Graphics">
       <HintPath>bin\FM.Graphics.dll</HintPath>
     </Reference>
+    <Reference Include="FM.Match">
+      <HintPath>bin\FM.Match.dll</HintPath>
+    </Reference>
     <Reference Include="Il2CppInterop.HarmonySupport">
       <HintPath>bin\Il2CppInterop.HarmonySupport.dll</HintPath>
     </Reference>
@@ -56,6 +59,9 @@
     </Reference>
     <Reference Include="UnityEngine.InputModule">
       <HintPath>bin\UnityEngine.InputModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>bin\UnityEngine.InputLegacyModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

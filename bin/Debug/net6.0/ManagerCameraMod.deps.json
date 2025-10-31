@@ -15,6 +15,7 @@
           "Unity.InputSystem": "1.11.2.0",
           "UnityEngine.CoreModule": "0.0.0.0",
           "UnityEngine": "0.0.0.0",
+          "UnityEngine.InputLegacyModule": "0.0.0.0",
           "UnityEngine.InputModule": "0.0.0.0"
         },
         "runtime": {
@@ -652,17 +653,17 @@
           }
         }
       },
-      "UnityEngine.InputModule/0.0.0.0": {
+      "UnityEngine.InputLegacyModule/0.0.0.0": {
         "runtime": {
-          "UnityEngine.InputModule.dll": {
+          "UnityEngine.InputLegacyModule.dll": {
             "assemblyVersion": "0.0.0.0",
             "fileVersion": "0.0.0.0"
           }
         }
       },
-      "UnityEngine.InputLegacyModule/0.0.0.0": {
+      "UnityEngine.InputModule/0.0.0.0": {
         "runtime": {
-          "UnityEngine.InputLegacyModule.dll": {
+          "UnityEngine.InputModule.dll": {
             "assemblyVersion": "0.0.0.0",
             "fileVersion": "0.0.0.0"
           }
@@ -1317,12 +1318,12 @@
       "serviceable": false,
       "sha512": ""
     },
-    "UnityEngine.InputModule/0.0.0.0": {
+    "UnityEngine.InputLegacyModule/0.0.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
     },
-    "UnityEngine.InputLegacyModule/0.0.0.0": {
+    "UnityEngine.InputModule/0.0.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
