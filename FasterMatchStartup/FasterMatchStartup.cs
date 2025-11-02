@@ -3,7 +3,6 @@ using System.Linq;
 using FM.Match;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 
 namespace FasterMatchStartup;
 
@@ -11,27 +10,21 @@ public class FasterMatchStartup : MonoBehaviour
 {
     public FasterMatchStartup(IntPtr ptr) : base(ptr) { }
     
-    private Action<Scene, LoadSceneMode> _sceneLoadedDelegate;
-
-    // Auto-setup flags
     private bool _pendingAutoSetup;
     private bool _didAutoSetupForThisScene;
     private float _autoSetupStartTime;
     
     void Start()
     {
-        _sceneLoadedDelegate = (Action<Scene, LoadSceneMode>)OnSceneLoaded;
-        SceneManager.sceneLoaded += _sceneLoadedDelegate;
-    }
-
-    private void OnDestroy()
-    {
-        if (_sceneLoadedDelegate != null)
+        _didAutoSetupForThisScene = false;
+        if (FasterMatchStartupBootstrap.AutoSetupOnSceneLoad != null && FasterMatchStartupBootstrap.AutoSetupOnSceneLoad.Value)
         {
-            SceneManager.sceneLoaded -= _sceneLoadedDelegate;
-            _sceneLoadedDelegate = null;
+            _pendingAutoSetup = true;
+            _autoSetupStartTime = Time.realtimeSinceStartup;
+            FasterMatchStartupBootstrap.LOG.LogInfo("FasterMatchStartup active in MatchPlayback: waiting until ready to auto-setup...");
         }
     }
+
 
     private void Update()
     {
@@ -92,19 +85,17 @@ public class FasterMatchStartup : MonoBehaviour
         var gateName = FasterMatchStartupBootstrap.AutoSetupCameraReadyObjectName?.Value;
         if (!string.IsNullOrEmpty(gateName) && GameObject.Find(gateName) == null)
         {
-            return; // wait until the camera dynamic object is present
+            return; // keep waiting
         }
 
-        // Target state name from config (default "Kick Off")
         string targetStateName = FasterMatchStartupBootstrap.AutoSetupTargetState?.Value ?? "Kick Off";
-        // Find the desired state safely
         var state = controller.m_stateMachine.States?.FirstOrDefault(p => p != null && p.m_name == targetStateName);
         if (state == null)
         {
-            return; // state list not ready yet; keep waiting
+            return; // keep waiting
         }
 
-        // Ready — perform the action once
+        // Ready
         try
         {
             controller.m_stateMachine.SetCurrentState(state);
@@ -165,26 +156,6 @@ public class FasterMatchStartup : MonoBehaviour
         else if (manual)
         {
             FasterMatchStartupBootstrap.LOG.LogWarning("Manual trigger: MatchPlaybackController not found in scene!");
-        }
-    }
-    
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        if (scene.name == "MatchPlayback")
-        {
-            _didAutoSetupForThisScene = false; // reset for this scene load
-            if (FasterMatchStartupBootstrap.AutoSetupOnSceneLoad != null && FasterMatchStartupBootstrap.AutoSetupOnSceneLoad.Value)
-            {
-                _pendingAutoSetup = true;
-                _autoSetupStartTime = Time.realtimeSinceStartup;
-                FasterMatchStartupBootstrap.LOG.LogInfo("MatchPlayback scene loaded: waiting until ready to auto-setup...");
-            }
-        }
-        else
-        {
-            // Leaving MatchPlayback or entering other scenes — clear pending state
-            _pendingAutoSetup = false;
-            _didAutoSetupForThisScene = false;
         }
     }
 }
