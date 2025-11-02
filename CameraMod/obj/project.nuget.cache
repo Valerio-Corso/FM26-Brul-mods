@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Bvj758+eCQs=",
+  "dgSpecHash": "egaV/sIZvDo=",
   "success": true,
-  "projectFilePath": "C:\\Unity\\ManagerCameraMod\\ManagerCameraMod.csproj",
+  "projectFilePath": "C:\\Unity\\FM26Mods\\CameraMod\\ManagerCameraMod.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\valer\\.nuget\\packages\\asmresolver\\6.0.0-beta.2\\asmresolver.6.0.0-beta.2.nupkg.sha512",
     "C:\\Users\\valer\\.nuget\\packages\\asmresolver.dotnet\\6.0.0-beta.2\\asmresolver.dotnet.6.0.0-beta.2.nupkg.sha512",

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "4ORNdggAM8k=",
+  "dgSpecHash": "9Gm8TLcf+PI=",
   "success": true,
-  "projectFilePath": "C:\\Unity\\ManagerCameraMod\\FasterMatchStartup\\FasterMatchStartup.csproj",
+  "projectFilePath": "C:\\Unity\\FM26Mods\\FasterMatchStartup\\FasterMatchStartup.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\valer\\.nuget\\packages\\asmresolver\\6.0.0-beta.2\\asmresolver.6.0.0-beta.2.nupkg.sha512",
     "C:\\Users\\valer\\.nuget\\packages\\asmresolver.dotnet\\6.0.0-beta.2\\asmresolver.dotnet.6.0.0-beta.2.nupkg.sha512",

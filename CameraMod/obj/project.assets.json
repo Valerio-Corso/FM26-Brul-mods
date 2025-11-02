@@ -4612,11 +4612,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Unity\\ManagerCameraMod\\ManagerCameraMod.csproj",
+      "projectUniqueName": "C:\\Unity\\FM26Mods\\CameraMod\\ManagerCameraMod.csproj",
       "projectName": "ManagerCameraMod",
-      "projectPath": "C:\\Unity\\ManagerCameraMod\\ManagerCameraMod.csproj",
+      "projectPath": "C:\\Unity\\FM26Mods\\CameraMod\\ManagerCameraMod.csproj",
       "packagesPath": "C:\\Users\\valer\\.nuget\\packages\\",
-      "outputPath": "C:\\Unity\\ManagerCameraMod\\obj\\",
+      "outputPath": "C:\\Unity\\FM26Mods\\CameraMod\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\valer\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -4692,7 +4692,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Users\\valer\\.dotnet\\sdk\\9.0.306\\RuntimeIdentifierGraph.json"
       }
     }
   }

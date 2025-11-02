@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("brululul.fastermatchstartup")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cf5a0367ffe7e85f097f0119659ca950c7614a56")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8fbf742b1f5870553f8cb15943f54dfa49d0c8b1")]
 [assembly: System.Reflection.AssemblyProductAttribute("FasterMatchStartup")]
 [assembly: System.Reflection.AssemblyTitleAttribute("brululul.fastermatchstartup")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

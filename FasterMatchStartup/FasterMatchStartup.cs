@@ -11,12 +11,34 @@ public class FasterMatchStartup : MonoBehaviour
     public FasterMatchStartup(IntPtr ptr) : base(ptr) { }
     
     private bool _pendingAutoSetup;
-    private bool _didAutoSetupForThisScene;
+    private bool _finished;
     private float _autoSetupStartTime;
+    private Key _manualKey = Key.F1;
     
     void Start()
     {
-        _didAutoSetupForThisScene = false;
+        _finished = false;
+        
+        try
+        {
+            var keyStr = FasterMatchStartupBootstrap.ManualTriggerKey?.Value;
+            if (!string.IsNullOrWhiteSpace(keyStr))
+            {
+                if (Enum.TryParse<Key>(keyStr.Trim(), true, out var parsed))
+                {
+                    _manualKey = parsed;
+                }
+                else
+                {
+                    FasterMatchStartupBootstrap.LOG.LogWarning($"Invalid ManualTriggerKey '{keyStr}'. Falling back to F1. Use names from UnityEngine.InputSystem.Key enum, e.g., F1, K, Space.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            FasterMatchStartupBootstrap.LOG.LogWarning($"Error parsing ManualTriggerKey: {ex.Message}. Falling back to F1.");
+        }
+        
         if (FasterMatchStartupBootstrap.AutoSetupOnSceneLoad != null && FasterMatchStartupBootstrap.AutoSetupOnSceneLoad.Value)
         {
             _pendingAutoSetup = true;
@@ -31,15 +53,19 @@ public class FasterMatchStartup : MonoBehaviour
         try
         {
             // Auto-setup flow: wait until scene objects are ready, then perform once
-            if (_pendingAutoSetup && ! _didAutoSetupForThisScene)
+            if (_pendingAutoSetup && ! _finished)
             {
                 TryAutoSetup();
             }
             
             // Manual trigger for debugging/forcing the behavior
-            if (Keyboard.current != null && Keyboard.current[Key.F1].wasPressedThisFrame)
+            if (Keyboard.current != null)
             {
-                TrySetKickoffState(manual:true);
+                var kc = Keyboard.current[_manualKey];
+                if (kc != null && kc.wasPressedThisFrame)
+                {
+                    TrySetKickoffState(manual:true);
+                }
             }
         }
         catch (Exception ex)
@@ -94,12 +120,12 @@ public class FasterMatchStartup : MonoBehaviour
         {
             return; // keep waiting
         }
-
+        
         // Ready
         try
         {
             controller.m_stateMachine.SetCurrentState(state);
-            _didAutoSetupForThisScene = true;
+            _finished = true;
             _pendingAutoSetup = false;
             FasterMatchStartupBootstrap.LOG.LogInfo($"Auto-setup complete: switched to '{targetStateName}' state.");
         }
@@ -112,6 +138,8 @@ public class FasterMatchStartup : MonoBehaviour
 
     private void TrySetKickoffState(bool manual)
     {
+        if (_finished) return;
+        
         string targetStateName = FasterMatchStartupBootstrap.AutoSetupTargetState?.Value ?? "Kick Off";
         var controller = FindObjectOfType<MatchPlaybackController>();
 
@@ -134,6 +162,7 @@ public class FasterMatchStartup : MonoBehaviour
                     try
                     {
                         controller.m_stateMachine.SetCurrentState(state);
+                        _finished = true;
                         if (manual)
                             FasterMatchStartupBootstrap.LOG.LogInfo($"Manual trigger: switched to '{targetStateName}' state.");
                     }

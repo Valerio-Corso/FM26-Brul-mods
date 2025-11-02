@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Unity\\ManagerCameraMod\\FasterMatchStartup\\FasterMatchStartup.csproj": {}
+    "C:\\Unity\\FM26Mods\\FasterMatchStartup\\FasterMatchStartup.csproj": {}
   },
   "projects": {
-    "C:\\Unity\\ManagerCameraMod\\FasterMatchStartup\\FasterMatchStartup.csproj": {
+    "C:\\Unity\\FM26Mods\\FasterMatchStartup\\FasterMatchStartup.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Unity\\ManagerCameraMod\\FasterMatchStartup\\FasterMatchStartup.csproj",
+        "projectUniqueName": "C:\\Unity\\FM26Mods\\FasterMatchStartup\\FasterMatchStartup.csproj",
         "projectName": "brululul.fastermatchstartup",
-        "projectPath": "C:\\Unity\\ManagerCameraMod\\FasterMatchStartup\\FasterMatchStartup.csproj",
+        "projectPath": "C:\\Unity\\FM26Mods\\FasterMatchStartup\\FasterMatchStartup.csproj",
         "packagesPath": "C:\\Users\\valer\\.nuget\\packages\\",
-        "outputPath": "C:\\Unity\\ManagerCameraMod\\FasterMatchStartup\\obj\\",
+        "outputPath": "C:\\Unity\\FM26Mods\\FasterMatchStartup\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\valer\\AppData\\Roaming\\NuGet\\NuGet.Config"
