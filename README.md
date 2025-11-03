@@ -2,7 +2,8 @@
 a collection of FM26 mods I have built. If you wish to share any please credit https://x.com/brulululI
 
 # Install instructions
-- Install BepInEx https://drive.google.com/file/d/1FV5EfkixDa_6oU_wK1aE79oWWKhrCYsD/view?usp=sharing
+- Install BepInEx, google drive link since I had to apply a custom patch to make it work.
+  - https://drive.google.com/file/d/1FV5EfkixDa_6oU_wK1aE79oWWKhrCYsD/view?usp=sharing
 - Install any mod by extracting it in BepInEx/plugins
 
 # Mods
