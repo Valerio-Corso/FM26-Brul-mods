@@ -162,16 +162,17 @@ public class ManagerCameraController : MonoBehaviour
                 _yaw += mouseX;
                 _customCamera.transform.localRotation = Quaternion.Euler(0f, _yaw, 0f);
 
+                //TODO: Manager rotation, finnicky as it is below
                 // Rotate the manager to face the same yaw as the camera (mouse look)
-                if (_manager != null)
-                {
-                    var camFwd = _customCamera.transform.forward;
-                    camFwd.y = 0f;
-                    if (camFwd.sqrMagnitude > 1e-6f)
-                    {
-                        _manager.rotation = Quaternion.LookRotation(camFwd, Vector3.up);
-                    }
-                }
+                // if (_manager != null)
+                // {
+                //     var camFwd = _customCamera.transform.forward;
+                //     camFwd.y = 0f;
+                //     if (camFwd.sqrMagnitude > 1e-6f)
+                //     {
+                //         _manager.rotation = Quaternion.LookRotation(camFwd, Vector3.up);
+                //     }
+                // }
             }
 
             // Optional zoom via mouse wheel
