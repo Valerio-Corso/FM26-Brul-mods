@@ -56,6 +56,18 @@ public class ManagerCameraController : MonoBehaviour
     private bool _originalMainEnabled = true;
     private string _lastSceneName = string.Empty;
 
+    // Clone-based control: keep original invisible, move the clone instead
+    private Transform _managerOriginal;
+    private GameObject _managerClone;
+
+    private class RendererState
+    {
+        public Renderer Renderer;
+        public bool WasEnabled;
+    }
+
+    private readonly List<RendererState> _originalRendererStates = new();
+
     public void Init(ManualLogSource logger)
     {
         _logger = logger;
@@ -149,6 +161,17 @@ public class ManagerCameraController : MonoBehaviour
                 float mouseX = delta.x * mouseSensitivity;
                 _yaw += mouseX;
                 _customCamera.transform.localRotation = Quaternion.Euler(0f, _yaw, 0f);
+
+                // Rotate the manager to face the same yaw as the camera (mouse look)
+                if (_manager != null)
+                {
+                    var camFwd = _customCamera.transform.forward;
+                    camFwd.y = 0f;
+                    if (camFwd.sqrMagnitude > 1e-6f)
+                    {
+                        _manager.rotation = Quaternion.LookRotation(camFwd, Vector3.up);
+                    }
+                }
             }
 
             // Optional zoom via mouse wheel
@@ -252,6 +275,90 @@ public class ManagerCameraController : MonoBehaviour
         _temporarilyDisabledBehaviours.Clear();
     }
 
+    private GameObject CreateManagerClone(Transform original)
+    {
+        try
+        {
+            if (original == null) return null;
+
+            var clone = Instantiate(original.gameObject);
+            clone.name = original.gameObject.name + " (CameraClone)";
+
+            // Match world transform
+            clone.transform.position = original.position;
+            clone.transform.rotation = original.rotation;
+            clone.transform.localScale = original.localScale;
+
+            // Keep all components enabled on the clone per user preference.
+            // Ensure the clone actually renders meshesparent
+            var renderers = clone.GetComponentsInChildren<Renderer>(true);
+            foreach (var r in renderers)
+            {
+                try { r.enabled = true; } catch { }
+                if (r is SkinnedMeshRenderer skinned)
+                {
+                    // Prevent culling issues when offscreen
+                    try { skinned.updateWhenOffscreen = true; } catch { }
+                }
+            }
+
+            return clone;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError($"ManagerCamera: CreateManagerClone failed: {ex}");
+            return null;
+        }
+    }
+
+    private void HideOriginalRenderers(Transform original)
+    {
+        try
+        {
+            _originalRendererStates.Clear();
+            if (original == null) return;
+            var renderers = original.GetComponentsInChildren<Renderer>(true);
+            foreach (var r in renderers)
+            {
+                if (r == null) continue;
+                var state = new RendererState { Renderer = r, WasEnabled = false };
+                try { state.WasEnabled = r.enabled; } catch { }
+                _originalRendererStates.Add(state);
+                try { r.enabled = false; } catch { }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning($"ManagerCamera: HideOriginalRenderers error: {ex.Message}");
+        }
+    }
+
+    private void RestoreOriginalRenderers()
+    {
+        try
+        {
+            if (_originalRendererStates.Count == 0) return;
+            foreach (var st in _originalRendererStates)
+            {
+                if (st?.Renderer == null) continue;
+                try { st.Renderer.enabled = st.WasEnabled; } catch { }
+            }
+        }
+        finally
+        {
+            _originalRendererStates.Clear();
+        }
+    }
+
+    private void DestroyManagerClone()
+    {
+        if (_managerClone != null)
+        {
+            try { Destroy(_managerClone); } catch { }
+            _managerClone = null;
+        }
+    }
+
     private void EnableCustomCamera()
     {
         try
@@ -264,14 +371,40 @@ public class ManagerCameraController : MonoBehaviour
             {
                 if (manager.m_characterRole == CharacterRole.UserManager)
                 {
-                    manager.StopAllCoroutines();
-                    _manager = manager.transform;
+                    _managerOriginal = manager.transform;
+
+                    // If we already have a leftover clone for some reason, clean it up
+                    if (_managerClone != null)
+                    {
+                        try { Destroy(_managerClone); } catch { }
+                        _managerClone = null;
+                    }
+
+                    // Try to clone the original and control the clone instead
+                    _managerClone = CreateManagerClone(_managerOriginal.parent);
+                    if (_managerClone != null)
+                    {
+                        _manager = _managerClone.transform;
+                        HideOriginalRenderers(_managerOriginal);
+                        _logger?.LogInfo("ManagerCamera: Using manager clone for movement; original renderers hidden.");
+                    }
+                    else
+                    {
+                        // Fallback: control the original if cloning failed
+                        _manager = _managerOriginal;
+                        _logger?.LogWarning("ManagerCamera: Failed to clone manager; falling back to controlling the original.");
+                    }
+
                     break;
                 }
             }
 
-            // TODO: instead of figuring out animation source, create a copy of the character and use it instead
-            // list all animations clips and play on character
+            // If we couldn't locate the manager, abort safely
+            if (_manager == null)
+            {
+                _logger?.LogWarning("ManagerCamera: UserManager not found in scene; cannot enable custom camera.");
+                return;
+            }
 
             // Create camera
             if (_customCamera == null)
@@ -359,7 +492,11 @@ public class ManagerCameraController : MonoBehaviour
                 _customCamera.transform.SetParent(null, worldPositionStays: true);
             }
 
-            // Restore any temporarily disabled components on Manager
+            // Restore original manager visibility and destroy our clone (if any)
+            RestoreOriginalRenderers();
+            DestroyManagerClone();
+
+            // Restore any temporarily disabled components on Manager (legacy path)
             if (disableManagerAnimator)
             {
                 try
@@ -392,6 +529,7 @@ public class ManagerCameraController : MonoBehaviour
         finally
         {
             _manager = null;
+            _managerOriginal = null;
             _ball = null;
             _lastMainCamera = null;
         }

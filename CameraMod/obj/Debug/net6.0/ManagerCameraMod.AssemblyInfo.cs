@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("brululul.managercamera")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ef17b67f0e774d18f4363172c49807a6ac85bccf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+414172574a88ca96ba36e8da2bccb51cc106f543")]
 [assembly: System.Reflection.AssemblyProductAttribute("Manager Camera mod")]
 [assembly: System.Reflection.AssemblyTitleAttribute("brululul.managercamera")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
