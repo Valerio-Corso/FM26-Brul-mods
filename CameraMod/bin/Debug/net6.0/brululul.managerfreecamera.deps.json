@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v6.0": {
-      "brululul.managercamera/1.0.0": {
+      "brululul.managerfreecamera/1.0.0": {
         "dependencies": {
           "BepInEx.PluginInfoProps": "2.1.0",
           "BepInEx.Unity.IL2CPP": "6.0.0-be.738",
@@ -25,7 +25,7 @@
           "UnityEngine.InputModule": "0.0.0.0"
         },
         "runtime": {
-          "brululul.managercamera.dll": {}
+          "brululul.managerfreecamera.dll": {}
         }
       },
       "AsmResolver/6.0.0-beta.2": {},
@@ -726,7 +726,7 @@
     }
   },
   "libraries": {
-    "brululul.managercamera/1.0.0": {
+    "brululul.managerfreecamera/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
