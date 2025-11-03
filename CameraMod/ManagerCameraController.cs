@@ -2,8 +2,14 @@
 using BepInEx.Logging;
 using Il2CppInterop.Runtime.Startup;
 using System.Collections.Generic;
+using FM.Graphics.CharacterBuilder.AppearanceController;
+using FM.Match;
+using FM.Match.Animation;
 using UnityEngine;
+using UnityEngine.Animations;
 using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
+using UnityEngine.Playables;
 using KeyCode = BepInEx.Unity.IL2CPP.UnityEngine.KeyCode;
 
 namespace ManagerCameraMod;
@@ -13,14 +19,12 @@ public class ManagerCameraController : MonoBehaviour
     private const string ManagerPath = "MatchPlaybackController/MatchComponents/Match3DBuilder/Manager(Clone)/ManagerController";
     private const string BallPath = "MatchPlaybackController/MatchComponents/Match3DBuilder/BallPrefab(Clone)";
     private const string GameScene = "MatchPlayback";
-    
-    //AppearanceController/
-    
-    public KeyCode activationKey = KeyCode.F3;
+
+
+    private Key _activationKey = Key.F3;
     public Vector3 cameraLocalOffset = new Vector3(0f, 1.6f, .3f);
 
     // Mouse look settings
-    public int panMouseButton = 1;
     public float mouseSensitivity = 0.5f;
     public bool lockCursorWhilePanning = true;
 
@@ -51,76 +55,56 @@ public class ManagerCameraController : MonoBehaviour
     public bool copySettingsFromMain = true;
     private bool _originalMainEnabled = true;
     private string _lastSceneName = string.Empty;
-    
-    // Reflection caches for Unity Input System (if present)
-    private System.Type _tKeyboard;
-    private System.Type _tKeyEnum;
-    private System.Type _tKeyControl;
-    private System.Reflection.PropertyInfo _currentInput;
-    private System.Reflection.PropertyInfo _currentInputItem;
-    private System.Reflection.PropertyInfo _currentInputWasPressed;
-    private System.Reflection.PropertyInfo _currentInputIsPressed;
-
-    // Mouse reflection caches (Unity Input System)
-    private System.Type _tMouse;
-    private System.Type _tButtonControl;
-    private System.Type _tVector2Control;
-    private System.Reflection.PropertyInfo _mouseCurrent;
-    private System.Reflection.PropertyInfo _mouseRightButton;
-    private System.Reflection.PropertyInfo _mouseDelta;
-    private System.Reflection.PropertyInfo _mouseScroll;
-    private System.Reflection.PropertyInfo _buttonIsPressed;
-    private System.Reflection.PropertyInfo _buttonWasPressedThisFrame;
-    private System.Reflection.PropertyInfo _buttonWasReleasedThisFrame;
-    private System.Reflection.MethodInfo _vector2ReadValue;
-    
 
     public void Init(ManualLogSource logger)
     {
         _logger = logger;
+        try
+        {
+            // Load settings from plugin config
+            var keyStr = ManagerCameraBootstrap.ActivationKey?.Value;
+            if (!string.IsNullOrWhiteSpace(keyStr))
+            {
+                if (!Enum.TryParse<Key>(keyStr.Trim(), true, out _activationKey))
+                {
+                    _activationKey = Key.F3;
+                    _logger.LogWarning($"Invalid ActivationKey '{keyStr}'. Falling back to F3.");
+                }
+            }
+
+            enableZoom = ManagerCameraBootstrap.EnableZoom?.Value ?? enableZoom;
+            mouseSensitivity = ManagerCameraBootstrap.MouseSensitivity?.Value ?? mouseSensitivity;
+            zoomSpeed = ManagerCameraBootstrap.ZoomSpeed?.Value ?? zoomSpeed;
+            minFov = ManagerCameraBootstrap.MinFov?.Value ?? minFov;
+            maxFov = ManagerCameraBootstrap.MaxFov?.Value ?? maxFov;
+            enableManagerMovement = ManagerCameraBootstrap.EnableManagerMovement?.Value ?? enableManagerMovement;
+            cameraRelativeMovement = ManagerCameraBootstrap.CameraRelativeMovement?.Value ?? cameraRelativeMovement;
+            moveSpeed = ManagerCameraBootstrap.MoveSpeed?.Value ?? moveSpeed;
+            disableManagerAnimator = ManagerCameraBootstrap.DisableManagerAnimator?.Value ?? disableManagerAnimator;
+            lockCursorWhilePanning = ManagerCameraBootstrap.LockCursorWhilePanning?.Value ?? lockCursorWhilePanning;
+            copySettingsFromMain = ManagerCameraBootstrap.CopySettingsFromMain?.Value ?? copySettingsFromMain;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning($"Failed to read ManagerCameraMod config: {ex.Message}");
+        }
     }
-    
+
     private bool test = false;
+
     private void Update()
     {
-        // todo: works, to test more
-        // if (Keyboard.current[Key.F1].wasPressedThisFrame)
-        // {
-        //     _logger.LogWarning($"[CAMMOD] Input recognized");
-        // }
-        
-        var activeScene = SceneManager.GetActiveScene();
-
-        // TODO: Temp fix: Detect scene changes without using SceneManager.activeSceneChanged (IL2CPP issues)
-        if (activeScene.IsValid())
+        var keyboard = Keyboard.current;
+        if (keyboard != null)
         {
-            var sceneName = activeScene.name;
-            if (_lastSceneName != sceneName)
+            var keyCtrl = keyboard[_activationKey];
+            if (keyCtrl != null && keyCtrl.wasPressedThisFrame)
             {
-                if (_customCameraActive) DisableCustomCamera(true);
-
-                _lastSceneName = sceneName;
-                _manager = null;
-                _ball = null;
-                _lastMainCamera = null;
+                if (_customCameraActive)
+                    DisableCustomCamera();
+                else
+                    EnableCustomCamera();
             }
-        }
-
-        // Only operate in the MatchPlayback scene.
-        // TODO: Test removing this as the scene is destroyed the camera will be too (remove DontDestroyOnLoad)
-        if (!activeScene.IsValid() || activeScene.name != GameScene)
-        {
-            if (_customCameraActive)
-                DisableCustomCamera(true);
-            return;
-        }
-
-        if (NewInputWasPressedThisFrame(activationKey))
-        {
-            if (_customCameraActive)
-                DisableCustomCamera(false);
-            else
-                EnableCustomCamera();
         }
 
         // While active, allow right-mouse-button panning; keep camera anchored to Manager
@@ -129,7 +113,7 @@ public class ManagerCameraController : MonoBehaviour
             if (_customCamera == null || _manager == null)
             {
                 _logger.LogWarning("ManagerCameraBootstrap: Required reference lost; deactivating our camera.");
-                DisableCustomCamera(false);
+                DisableCustomCamera();
                 return;
             }
 
@@ -185,24 +169,33 @@ public class ManagerCameraController : MonoBehaviour
             {
                 int h = 0;
                 int v = 0;
-                if (IsKeyHeld(KeyCode.A)) h -= 1;
-                if (IsKeyHeld(KeyCode.D)) h += 1;
-                if (IsKeyHeld(KeyCode.S)) v -= 1;
-                if (IsKeyHeld(KeyCode.W)) v += 1;
+                var kb = Keyboard.current;
+                if (kb != null)
+                {
+                    if (kb[Key.A].isPressed) h -= 1;
+                    if (kb[Key.D].isPressed) h += 1;
+                    if (kb[Key.S].isPressed) v -= 1;
+                    if (kb[Key.W].isPressed) v += 1;
+                }
 
                 if (h != 0 || v != 0)
                 {
                     Vector3 moveDir;
                     if (cameraRelativeMovement && _customCamera != null)
                     {
-                        var fwd = _customCamera.transform.forward; fwd.y = 0f; if (fwd.sqrMagnitude > 1e-6f) fwd.Normalize();
-                        var right = _customCamera.transform.right; right.y = 0f; if (right.sqrMagnitude > 1e-6f) right.Normalize();
+                        var fwd = _customCamera.transform.forward;
+                        fwd.y = 0f;
+                        if (fwd.sqrMagnitude > 1e-6f) fwd.Normalize();
+                        var right = _customCamera.transform.right;
+                        right.y = 0f;
+                        if (right.sqrMagnitude > 1e-6f) right.Normalize();
                         moveDir = right * h + fwd * v;
                     }
                     else
                     {
                         moveDir = new Vector3(h, 0f, v);
                     }
+
                     if (moveDir.sqrMagnitude > 1f) moveDir.Normalize();
 
                     var pos = _manager.position;
@@ -215,254 +208,34 @@ public class ManagerCameraController : MonoBehaviour
         }
     }
 
-
-    private static float NormalizeAngle(float angle)
-    {
-        angle %= 360f;
-        if (angle > 180f) angle -= 360f;
-        if (angle < -180f) angle += 360f;
-        return angle;
-    }
-
-    // TODO: Ugly reflection, ideally i would use Unity's InputSystem API directly', not sure why that's not working
-    private bool TryInitInputSystem()
-    {
-        if (_tKeyboard != null && _tKeyEnum != null && _tKeyControl != null && _currentInput != null && _currentInputItem != null && _currentInputWasPressed != null && _currentInputIsPressed != null)
-            return true;
-
-        try
-        {
-            _tKeyboard = System.Type.GetType("UnityEngine.InputSystem.Keyboard, Unity.InputSystem");
-            _tKeyEnum = System.Type.GetType("UnityEngine.InputSystem.Key, Unity.InputSystem");
-            _tKeyControl = System.Type.GetType("UnityEngine.InputSystem.Controls.KeyControl, Unity.InputSystem");
-            if (_tKeyboard == null || _tKeyEnum == null || _tKeyControl == null)
-                return false;
-
-            _currentInput = _tKeyboard.GetProperty("current", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            _currentInputItem = _tKeyboard.GetProperty("Item", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            _currentInputWasPressed = _tKeyControl.GetProperty("wasPressedThisFrame", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            _currentInputIsPressed = _tKeyControl.GetProperty("isPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-
-            return _currentInput != null && _currentInputItem != null && _currentInputWasPressed != null && _currentInputIsPressed != null;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private bool TryInitMouseInput()
-    {
-        // UnityEngine.Object.FindObjectsByType<>()
-        // FM.Match.MatchPlaybackController.ContinueButtonMatchState.
-            
-        if (_tMouse != null && _tButtonControl != null && _tVector2Control != null &&
-            _mouseCurrent != null && _mouseRightButton != null && _mouseDelta != null && _mouseScroll != null &&
-            _buttonIsPressed != null && _buttonWasPressedThisFrame != null && _buttonWasReleasedThisFrame != null)
-            return true;
-
-        try
-        {
-            _tMouse = System.Type.GetType("UnityEngine.InputSystem.Mouse, Unity.InputSystem");
-            _tButtonControl = System.Type.GetType("UnityEngine.InputSystem.Controls.ButtonControl, Unity.InputSystem");
-            _tVector2Control = System.Type.GetType("UnityEngine.InputSystem.Controls.Vector2Control, Unity.InputSystem");
-            if (_tMouse == null || _tButtonControl == null || _tVector2Control == null)
-                return false;
-
-            _mouseCurrent = _tMouse.GetProperty("current", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            _mouseRightButton = _tMouse.GetProperty("rightButton", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            _mouseDelta = _tMouse.GetProperty("delta", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            _mouseScroll = _tMouse.GetProperty("scroll", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-
-            _buttonIsPressed = _tButtonControl.GetProperty("isPressed", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            _buttonWasPressedThisFrame = _tButtonControl.GetProperty("wasPressedThisFrame", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            _buttonWasReleasedThisFrame = _tButtonControl.GetProperty("wasReleasedThisFrame", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-
-            _vector2ReadValue = _tVector2Control.GetMethod("ReadValue", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, new System.Type[] { });
-
-            return _mouseCurrent != null && _mouseRightButton != null && _mouseDelta != null && _mouseScroll != null &&
-                   _buttonIsPressed != null && _buttonWasPressedThisFrame != null && _buttonWasReleasedThisFrame != null &&
-                   _vector2ReadValue != null;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private bool NewInputWasPressedThisFrame(KeyCode keyCode)
-    {
-        if (!TryInitInputSystem()) return false;
-
-        var keyboard = _currentInput.GetValue(null, null);
-        if (keyboard == null) return false;
-
-        // Map KeyCode to InputSystem.Key. Handle F1 explicitly
-        object keyEnumValue = null;
-        try
-        {
-            if (keyCode == KeyCode.F1)
-            {
-                keyEnumValue = System.Enum.Parse(_tKeyEnum, "F1");
-            }
-            else
-            {
-                keyEnumValue = System.Enum.Parse(_tKeyEnum, keyCode.ToString(), ignoreCase: true);
-            }
-        }
-        catch
-        {
-            return false;
-        }
-
-        // Access indexer: Keyboard[key]
-        var keyControl = _currentInputItem.GetValue(keyboard, new object[] { keyEnumValue });
-        if (keyControl == null) return false;
-
-        var value = _currentInputWasPressed.GetValue(keyControl, null);
-        return value is bool b && b;
-    }
-
-    private bool IsKeyHeld(KeyCode keyCode)
-    {
-        // Try the new Input System via reflection
-        if (TryInitInputSystem())
-        {
-            var keyboard = _currentInput.GetValue(null, null);
-            if (keyboard != null)
-            {
-                object keyEnumValue = null;
-                try { keyEnumValue = System.Enum.Parse(_tKeyEnum, keyCode.ToString(), ignoreCase: true); } catch { keyEnumValue = null; }
-                if (keyEnumValue != null)
-                {
-                    var keyControl = _currentInputItem.GetValue(keyboard, new object[] { keyEnumValue });
-                    if (keyControl != null)
-                    {
-                        var v = _currentInputIsPressed.GetValue(keyControl, null);
-                        if (v is bool b) return b;
-                    }
-                }
-            }
-        }
-        // Legacy fallback: map to UnityEngine.KeyCode
-        try
-        {
-            var legacy = (UnityEngine.KeyCode)System.Enum.Parse(typeof(UnityEngine.KeyCode), keyCode.ToString(), true);
-            return Input.GetKey(legacy);
-        }
-        catch { return false; }
-    }
-
     private bool MouseRightHeld()
     {
-        if (TryInitMouseInput())
-        {
-            var mouse = _mouseCurrent.GetValue(null, null);
-            if (mouse != null)
-            {
-                var rb = _mouseRightButton.GetValue(mouse, null);
-                if (rb != null)
-                {
-                    var v = _buttonIsPressed.GetValue(rb, null);
-                    if (v is bool b) return b;
-                }
-            }
-        }
-        // Fallback to legacy
-        return Input.GetMouseButton(panMouseButton);
+        var m = Mouse.current;
+        return m != null && m.rightButton.isPressed;
     }
 
     private bool MouseRightDown()
     {
-        if (TryInitMouseInput())
-        {
-            var mouse = _mouseCurrent.GetValue(null, null);
-            if (mouse != null)
-            {
-                var rb = _mouseRightButton.GetValue(mouse, null);
-                if (rb != null)
-                {
-                    var v = _buttonWasPressedThisFrame.GetValue(rb, null);
-                    if (v is bool b) return b;
-                }
-            }
-        }
-        return Input.GetMouseButtonDown(panMouseButton);
+        var m = Mouse.current;
+        return m != null && m.rightButton.wasPressedThisFrame;
     }
 
     private bool MouseRightUp()
     {
-        if (TryInitMouseInput())
-        {
-            var mouse = _mouseCurrent.GetValue(null, null);
-            if (mouse != null)
-            {
-                var rb = _mouseRightButton.GetValue(mouse, null);
-                if (rb != null)
-                {
-                    var v = _buttonWasReleasedThisFrame.GetValue(rb, null);
-                    if (v is bool b) return b;
-                }
-            }
-        }
-        return Input.GetMouseButtonUp(panMouseButton);
+        var m = Mouse.current;
+        return m != null && m.rightButton.wasReleasedThisFrame;
     }
 
     private Vector2 GetMouseDelta()
     {
-        if (TryInitMouseInput())
-        {
-            var mouse = _mouseCurrent.GetValue(null, null);
-            if (mouse != null)
-            {
-                var delta = _mouseDelta.GetValue(mouse, null);
-                if (delta != null)
-                {
-                    var v = _vector2ReadValue.Invoke(delta, null);
-                    if (v is Vector2 vec2) return vec2;
-                }
-            }
-        }
-        // Legacy fallback
-        return new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
+        var m = Mouse.current;
+        return m != null ? m.delta.ReadValue() : Vector2.zero;
     }
 
     private float GetScrollY()
     {
-        if (TryInitMouseInput())
-        {
-            var mouse = _mouseCurrent.GetValue(null, null);
-            if (mouse != null)
-            {
-                var scroll = _mouseScroll.GetValue(mouse, null);
-                if (scroll != null)
-                {
-                    var v = _vector2ReadValue.Invoke(scroll, null);
-                    if (v is Vector2 vec2) return vec2.y;
-                }
-            }
-        }
-        // Legacy fallback
-        // Prefer mouseScrollDelta if available; otherwise axis
-        try { return Input.mouseScrollDelta.y; } catch { return Input.GetAxis("Mouse ScrollWheel"); }
-    }
-
-    private void TryDisableManagerInterferingComponents(GameObject root)
-    {
-        _temporarilyDisabledBehaviours.Clear();
-        if (root == null) return;
-
-        // Disable Animator components by name to avoid hard reference to AnimationModule
-        // DisableByTypeName(root, "UnityEngine.Animator");
-        // DisableByTypeName(root, "Animator");
-        //
-        // // Disable specific known behaviours by name (present in FM.Match)
-        // DisableByTypeName(root, "FM.Match.AnimatorCharacterVisuals3D");
-        // DisableByTypeName(root, "AnimatorCharacterVisuals3D");
-        //
-        // // Optionally disable NavMeshAgent if present to prevent navigation overriding position
-        // DisableByTypeName(root, "UnityEngine.AI.NavMeshAgent");
-        // DisableByTypeName(root, "NavMeshAgent");
+        var m = Mouse.current;
+        return m != null ? m.scroll.ReadValue().y : 0f;
     }
 
     private void RestoreDisabledManagerComponents()
@@ -475,50 +248,38 @@ public class ManagerCameraController : MonoBehaviour
                 b.enabled = true;
             }
         }
+
         _temporarilyDisabledBehaviours.Clear();
     }
-    
+
     private void EnableCustomCamera()
     {
         try
         {
             _lastMainCamera = Camera.main;
-            
+
             // TODO: Why it doesn't work... usual error when resolving 
-            // var allManagers = FindObjectsByType<AppearanceController>(FindObjectsSortMode.InstanceID);
-            // foreach (var manager in allManagers)
-            // {
-            //     if (manager.m_characterRole == CharacterRole.UserManager)
-            //     {
-            //         _manager = manager.transform;
-            //         break;
-            //     }
-            // }
-            
-            var managerGo = GameObject.Find(ManagerPath);
-            _manager = managerGo != null ? managerGo.transform : null;
-            
-            // managerGo.GetComponent<FM.Match.AnimatorCharacterVisuals3D>(
-
-            var ballGo = GameObject.Find(BallPath);
-            _ball = ballGo != null ? ballGo.transform : null;
-
-            if (_manager == null)
+            var allManagers = FindObjectsByType<AppearanceController>(FindObjectsSortMode.InstanceID);
+            foreach (var manager in allManagers)
             {
-                _logger.LogWarning($"ManagerCameraBootstrap: Activate failed — Manager not found'.");
-                return;
+                if (manager.m_characterRole == CharacterRole.UserManager)
+                {
+                    manager.StopAllCoroutines();
+                    _manager = manager.transform;
+                    break;
+                }
             }
-            // Ball is optional for this mode; we no longer track it
+
+            // TODO: instead of figuring out animation source, create a copy of the character and use it instead
+            // list all animations clips and play on character
 
             // Create camera
             if (_customCamera == null)
             {
                 var go = new GameObject("ManagerCam_Custom");
                 _customCamera = go.AddComponent<Camera>();
-                DontDestroyOnLoad(go);
-                go.hideFlags = HideFlags.HideAndDontSave;
-                // TODO: Check if really needed
-                go.tag = "MainCamera";
+                // Keep camera scene-bound; do not persist across scenes
+                go.hideFlags = HideFlags.None;
 
                 // Copy visual settings from the game's main camera
                 // TODO: more wonky stuff could be done here
@@ -538,7 +299,7 @@ public class ManagerCameraController : MonoBehaviour
                     }
                     catch
                     {
-                        /* ignore per-field copy issues on IL2CPP */ 
+                        /* ignore per-field copy issues on IL2CPP */
                     }
                 }
             }
@@ -563,6 +324,7 @@ public class ManagerCameraController : MonoBehaviour
                 _originalMainEnabled = _lastMainCamera.enabled;
                 _lastMainCamera.enabled = false;
             }
+
             _customCamera.gameObject.SetActive(true);
             _customCamera.enabled = true;
             _customCameraActive = true;
@@ -575,7 +337,7 @@ public class ManagerCameraController : MonoBehaviour
         }
     }
 
-    private void DisableCustomCamera(bool dueToSceneChange)
+    private void DisableCustomCamera()
     {
         try
         {
@@ -585,6 +347,7 @@ public class ManagerCameraController : MonoBehaviour
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
             }
+
             _isPanning = false;
 
             // Disable camera but keep it around for reuse
@@ -603,7 +366,9 @@ public class ManagerCameraController : MonoBehaviour
                 {
                     RestoreDisabledManagerComponents();
                 }
-                catch { }
+                catch
+                {
+                }
             }
 
             // Re-enable the game's camera
@@ -613,7 +378,9 @@ public class ManagerCameraController : MonoBehaviour
                 {
                     _lastMainCamera.enabled = _originalMainEnabled;
                 }
-                catch { }
+                catch
+                {
+                }
             }
 
             _customCameraActive = false;
@@ -627,6 +394,64 @@ public class ManagerCameraController : MonoBehaviour
             _manager = null;
             _ball = null;
             _lastMainCamera = null;
+        }
+    }
+
+    public void PrintAnimatorInfo(Animator animator)
+    {
+        if (animator == null)
+        {
+            Debug.Log("Animator is null");
+            return;
+        }
+
+        // Get the RuntimeAnimatorController
+        var controller = animator.runtimeAnimatorController;
+        if (controller == null)
+        {
+            Debug.Log("No AnimatorController assigned");
+            return;
+        }
+
+        Debug.Log($"=== Animator Controller: {controller.name} ===");
+
+        // Print all animation clips
+        Debug.Log("\n--- Animation Clips ---");
+        foreach (var clip in controller.animationClips)
+        {
+            Debug.Log($"Clip: {clip.name}, Length: {clip.length}s, FPS: {clip.frameRate}");
+        }
+
+        // Get layers and states (requires casting to AnimatorController for edit-time, 
+        // or using reflection/layers for runtime)
+        Debug.Log("\n--- Layers and States ---");
+        for (int i = 0; i < animator.layerCount; i++)
+        {
+            Debug.Log($"\nLayer {i}: {animator.GetLayerName(i)}, Weight: {animator.GetLayerWeight(i)}");
+        }
+
+        // Print current state info for each layer
+        Debug.Log("\n--- Current States ---");
+        for (int i = 0; i < animator.layerCount; i++)
+        {
+            var stateInfo = animator.GetCurrentAnimatorStateInfo(i);
+            Debug.Log($"Layer {i}: Current State Hash: {stateInfo.fullPathHash}, " +
+                      $"Normalized Time: {stateInfo.normalizedTime:F2}");
+        }
+
+        // Print parameters
+        Debug.Log("\n--- Parameters ---");
+        foreach (var param in animator.parameters)
+        {
+            string value = param.type switch
+            {
+                AnimatorControllerParameterType.Float => animator.GetFloat(param.name).ToString("F2"),
+                AnimatorControllerParameterType.Int => animator.GetInteger(param.name).ToString(),
+                AnimatorControllerParameterType.Bool => animator.GetBool(param.name).ToString(),
+                AnimatorControllerParameterType.Trigger => "(Trigger)",
+                _ => "Unknown"
+            };
+            Debug.Log($"Parameter: {param.name}, Type: {param.type}, Value: {value}");
         }
     }
 }

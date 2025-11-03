@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v6.0": {
-      "ManagerCameraMod/1.0.0": {
+      "brululul.managercamera/1.0.0": {
         "dependencies": {
           "BepInEx.PluginInfoProps": "2.1.0",
           "BepInEx.Unity.IL2CPP": "6.0.0-be.738",
@@ -18,13 +18,14 @@
           "SI.Input": "0.0.0.0",
           "SI.Match": "0.0.0.0",
           "Unity.InputSystem": "1.11.2.0",
+          "UnityEngine.AnimationModule": "0.0.0.0",
           "UnityEngine.CoreModule": "0.0.0.0",
           "UnityEngine": "0.0.0.0",
           "UnityEngine.InputLegacyModule": "0.0.0.0",
           "UnityEngine.InputModule": "0.0.0.0"
         },
         "runtime": {
-          "ManagerCameraMod.dll": {}
+          "brululul.managercamera.dll": {}
         }
       },
       "AsmResolver/6.0.0-beta.2": {},
@@ -682,6 +683,14 @@
           }
         }
       },
+      "UnityEngine.AnimationModule/0.0.0.0": {
+        "runtime": {
+          "UnityEngine.AnimationModule.dll": {
+            "assemblyVersion": "0.0.0.0",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
       "UnityEngine.CoreModule/0.0.0.0": {
         "runtime": {
           "UnityEngine.CoreModule.dll": {
@@ -717,7 +726,7 @@
     }
   },
   "libraries": {
-    "ManagerCameraMod/1.0.0": {
+    "brululul.managercamera/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -1374,6 +1383,11 @@
       "sha512": ""
     },
     "Unity.InputSystem/1.11.2.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "UnityEngine.AnimationModule/0.0.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
