@@ -17,6 +17,6 @@ A config will be generated for customization. The most relevant is being able to
 
 Switch your camera to the manager and freely walk around the pitch [see](https://x.com/brulululI/status/1984387966421114986)
 
-Still very WIP, might add animations/actions later on.
+Still very WIP, might add animations/actions later on, as always a config will be generated for customization, keybind, mouse speed, fov, etc
 
-Press F3 to switch to this camera, as always a config will be generated for customization, keybind, mouse speed, fov, etc
+Press F3 to switch to this camera, Right-mouse to pan camera around, mouse wheel to change fov and WASD to move
