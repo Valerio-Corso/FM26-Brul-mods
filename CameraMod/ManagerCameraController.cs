@@ -16,7 +16,7 @@ public class ManagerCameraController : MonoBehaviour
     
     //AppearanceController/
     
-    public KeyCode activationKey = KeyCode.F1;
+    public KeyCode activationKey = KeyCode.F3;
     public Vector3 cameraLocalOffset = new Vector3(0f, 1.6f, .3f);
 
     // Mouse look settings

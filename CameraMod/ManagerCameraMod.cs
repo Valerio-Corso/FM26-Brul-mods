@@ -22,11 +22,8 @@ public partial class ManagerCameraMod : BasePlugin
         var go = new GameObject("ManagerCameraController");
         Object.DontDestroyOnLoad(go);
         
-        // ClassInjector.RegisterTypeInIl2Cpp<ManagerCameraController>();
-        // var component = go.AddComponent<ManagerCameraController>();
-        // component.Init(_log);
-        
-        ClassInjector.RegisterTypeInIl2Cpp<MyBehaviour>();
-        go.AddComponent<MyBehaviour>();
+        ClassInjector.RegisterTypeInIl2Cpp<ManagerCameraController>();
+        var component = go.AddComponent<ManagerCameraController>();
+        component.Init(_log);
     }
 }
