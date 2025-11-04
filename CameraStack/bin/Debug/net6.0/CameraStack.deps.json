@@ -10,18 +10,22 @@
         "dependencies": {
           "BepInEx.PluginInfoProps": "2.1.0",
           "BepInEx.Unity.IL2CPP": "6.0.0-be.738",
+          "HarmonyX": "2.10.2",
           "FM.Graphics": "0.0.0.0",
           "FM.Match": "0.0.0.0",
           "Il2Cppmscorlib": "4.0.0.0",
           "SI.Anim": "0.0.0.0",
+          "SI.Bindable": "0.0.0.0",
           "SI.Core": "0.0.0.0",
           "SI.Input": "0.0.0.0",
           "SI.Match": "0.0.0.0",
+          "SI.MatchTypes": "0.0.0.0",
           "Unity.InputSystem": "1.11.2.0",
           "UnityEngine.AnimationModule": "0.0.0.0",
           "UnityEngine.CoreModule": "0.0.0.0",
           "UnityEngine": "0.0.0.0",
-          "UnityEngine.InputModule": "0.0.0.0"
+          "UnityEngine.InputModule": "0.0.0.0",
+          "UnityEngine.UIElementsModule": "0.0.0.0"
         },
         "runtime": {
           "CameraStack.dll": {}
@@ -82,6 +86,12 @@
         "dependencies": {
           "MonoMod.RuntimeDetour": "22.7.31.1",
           "System.Reflection.Emit": "4.7.0"
+        },
+        "runtime": {
+          "lib/netstandard2.0/0Harmony.dll": {
+            "assemblyVersion": "2.10.2.0",
+            "fileVersion": "2.10.2.0"
+          }
         }
       },
       "Iced/1.21.0": {},
@@ -114,7 +124,26 @@
       "Microsoft.Extensions.Logging.Abstractions/6.0.1": {},
       "Microsoft.NETCore.Platforms/1.1.1": {},
       "Microsoft.NETCore.Targets/1.1.0": {},
-      "Mono.Cecil/0.11.4": {},
+      "Mono.Cecil/0.11.4": {
+        "runtime": {
+          "lib/netstandard2.0/Mono.Cecil.Mdb.dll": {
+            "assemblyVersion": "0.11.4.0",
+            "fileVersion": "0.11.4.0"
+          },
+          "lib/netstandard2.0/Mono.Cecil.Pdb.dll": {
+            "assemblyVersion": "0.11.4.0",
+            "fileVersion": "0.11.4.0"
+          },
+          "lib/netstandard2.0/Mono.Cecil.Rocks.dll": {
+            "assemblyVersion": "0.11.4.0",
+            "fileVersion": "0.11.4.0"
+          },
+          "lib/netstandard2.0/Mono.Cecil.dll": {
+            "assemblyVersion": "0.11.4.0",
+            "fileVersion": "0.11.4.0"
+          }
+        }
+      },
       "MonoMod.Backports/1.1.2": {
         "dependencies": {
           "MonoMod.ILHelpers": "1.1.0"
@@ -131,6 +160,12 @@
           "System.Reflection.Emit.ILGeneration": "4.7.0",
           "System.Reflection.Emit.Lightweight": "4.7.0",
           "System.Reflection.TypeExtensions": "4.7.0"
+        },
+        "runtime": {
+          "lib/net5.0/MonoMod.RuntimeDetour.dll": {
+            "assemblyVersion": "22.7.31.1",
+            "fileVersion": "22.7.31.1"
+          }
         }
       },
       "MonoMod.Utils/22.7.31.1": {
@@ -142,6 +177,12 @@
           "System.Reflection.Emit.ILGeneration": "4.7.0",
           "System.Reflection.Emit.Lightweight": "4.7.0",
           "System.Reflection.TypeExtensions": "4.7.0"
+        },
+        "runtime": {
+          "lib/net5.0/MonoMod.Utils.dll": {
+            "assemblyVersion": "22.7.31.1",
+            "fileVersion": "22.7.31.1"
+          }
         }
       },
       "runtime.debian.8-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {},
@@ -650,6 +691,14 @@
           }
         }
       },
+      "SI.Bindable/0.0.0.0": {
+        "runtime": {
+          "SI.Bindable.dll": {
+            "assemblyVersion": "0.0.0.0",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
       "SI.Core/0.0.0.0": {
         "runtime": {
           "SI.Core.dll": {
@@ -669,6 +718,14 @@
       "SI.Match/0.0.0.0": {
         "runtime": {
           "SI.Match.dll": {
+            "assemblyVersion": "0.0.0.0",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "SI.MatchTypes/0.0.0.0": {
+        "runtime": {
+          "SI.MatchTypes.dll": {
             "assemblyVersion": "0.0.0.0",
             "fileVersion": "0.0.0.0"
           }
@@ -709,6 +766,14 @@
       "UnityEngine.InputModule/0.0.0.0": {
         "runtime": {
           "UnityEngine.InputModule.dll": {
+            "assemblyVersion": "0.0.0.0",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "UnityEngine.UIElementsModule/0.0.0.0": {
+        "runtime": {
+          "UnityEngine.UIElementsModule.dll": {
             "assemblyVersion": "0.0.0.0",
             "fileVersion": "0.0.0.0"
           }
@@ -1358,6 +1423,11 @@
       "serviceable": false,
       "sha512": ""
     },
+    "SI.Bindable/0.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
     "SI.Core/0.0.0.0": {
       "type": "reference",
       "serviceable": false,
@@ -1369,6 +1439,11 @@
       "sha512": ""
     },
     "SI.Match/0.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "SI.MatchTypes/0.0.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
@@ -1394,6 +1469,11 @@
       "sha512": ""
     },
     "UnityEngine.InputModule/0.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "UnityEngine.UIElementsModule/0.0.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""

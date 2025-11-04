@@ -197,7 +197,7 @@
           }
         },
         "runtime": {
-          "lib/netstandard2.0/_._": {
+          "lib/netstandard2.0/0Harmony.dll": {
             "related": ".xml"
           }
         }
@@ -336,7 +336,16 @@
           }
         },
         "runtime": {
-          "lib/netstandard2.0/_._": {
+          "lib/netstandard2.0/Mono.Cecil.Mdb.dll": {
+            "related": ".pdb"
+          },
+          "lib/netstandard2.0/Mono.Cecil.Pdb.dll": {
+            "related": ".pdb"
+          },
+          "lib/netstandard2.0/Mono.Cecil.Rocks.dll": {
+            "related": ".pdb"
+          },
+          "lib/netstandard2.0/Mono.Cecil.dll": {
             "related": ".Mdb.pdb;.pdb;.Pdb.pdb;.Rocks.pdb"
           }
         }
@@ -388,7 +397,7 @@
           }
         },
         "runtime": {
-          "lib/net5.0/_._": {
+          "lib/net5.0/MonoMod.RuntimeDetour.dll": {
             "related": ".xml"
           }
         }
@@ -410,7 +419,7 @@
           }
         },
         "runtime": {
-          "lib/net5.0/_._": {
+          "lib/net5.0/MonoMod.Utils.dll": {
             "related": ".xml"
           }
         }
@@ -683,7 +692,7 @@
           }
         },
         "runtime": {
-          "lib/netstandard1.3/_._": {}
+          "lib/netstandard1.3/System.Collections.NonGeneric.dll": {}
         }
       },
       "System.Collections.Specialized/4.3.0": {
@@ -703,7 +712,7 @@
           }
         },
         "runtime": {
-          "lib/netstandard1.3/_._": {}
+          "lib/netstandard1.3/System.Collections.Specialized.dll": {}
         }
       },
       "System.ComponentModel/4.3.0": {
@@ -717,7 +726,7 @@
           }
         },
         "runtime": {
-          "lib/netstandard1.3/_._": {}
+          "lib/netstandard1.3/System.ComponentModel.dll": {}
         }
       },
       "System.ComponentModel.Primitives/4.3.0": {
@@ -733,7 +742,7 @@
           }
         },
         "runtime": {
-          "lib/netstandard1.0/_._": {}
+          "lib/netstandard1.0/System.ComponentModel.Primitives.dll": {}
         }
       },
       "System.ComponentModel.TypeConverter/4.3.0": {
@@ -761,7 +770,7 @@
           }
         },
         "runtime": {
-          "lib/netstandard1.5/_._": {}
+          "lib/netstandard1.5/System.ComponentModel.TypeConverter.dll": {}
         }
       },
       "System.Diagnostics.Debug/4.3.0": {
@@ -853,7 +862,11 @@
           }
         },
         "runtimeTargets": {
-          "runtimes/win/lib/netstandard1.3/_._": {
+          "runtimes/unix/lib/netstandard1.3/System.Globalization.Extensions.dll": {
+            "assetType": "runtime",
+            "rid": "unix"
+          },
+          "runtimes/win/lib/netstandard1.3/System.Globalization.Extensions.dll": {
             "assetType": "runtime",
             "rid": "win"
           }
@@ -903,7 +916,7 @@
           }
         },
         "runtime": {
-          "lib/netstandard1.3/_._": {}
+          "lib/netstandard1.3/System.IO.FileSystem.Primitives.dll": {}
         }
       },
       "System.Linq/4.3.0": {
@@ -921,7 +934,7 @@
           }
         },
         "runtime": {
-          "lib/netstandard1.6/_._": {}
+          "lib/netstandard1.6/System.Linq.dll": {}
         }
       },
       "System.Net.Http/4.3.4": {
@@ -1362,7 +1375,7 @@
           }
         },
         "runtime": {
-          "lib/netstandard1.3/_._": {}
+          "lib/netstandard1.3/System.Threading.dll": {}
         }
       },
       "System.Threading.Tasks/4.3.0": {
@@ -4603,7 +4616,8 @@
   "projectFileDependencyGroups": {
     "net6.0": [
       "BepInEx.PluginInfoProps >= 2.*",
-      "BepInEx.Unity.IL2CPP >= 6.0.0-be.*"
+      "BepInEx.Unity.IL2CPP >= 6.0.0-be.*",
+      "HarmonyX >= 2.10.2"
     ]
   },
   "packageFolders": {
@@ -4660,6 +4674,10 @@
             "include": "Compile",
             "target": "Package",
             "version": "[6.0.0-be.*, )"
+          },
+          "HarmonyX": {
+            "target": "Package",
+            "version": "[2.10.2, )"
           }
         },
         "imports": [

@@ -1,8 +1,13 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
 using FM.Match;
+using FM.Match.Camera;
 using SI.Anim;
+using SI.Core;
+using SI.MatchTypes;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace CameraStack;
 
@@ -63,6 +68,35 @@ public class CameraStackController : MonoBehaviour
             t.localPosition = cameraLocalOffset;
             t.localRotation = Quaternion.Euler(cameraLocalEuler);
         }
+        
+        if (Keyboard.current != null)
+        {
+            var kc = Keyboard.current[Key.F4];
+            if (kc == null || !kc.wasPressedThisFrame) return;
+            
+            var cameraDirector = FindObjectOfType<CameraDirectorComponent>();
+            var visualizationMode = cameraDirector != null ? cameraDirector.m_currentMatchVisualizationMode : null;
+
+            // if (visualizationMode.m_cameraHandles != null)
+            // {
+            //     foreach (var (key, handle) in visualizationMode.m_cameraHandles)
+            //     {
+            //         string meta = "";
+            //         try { meta += handle?.ToString(); } catch { }
+            //         try { var kField = handle?.GetType().GetField("m_key", BindingFlags.NonPublic|BindingFlags.Instance); meta += $"; key={kField?.GetValue(handle)}"; } catch { }
+            //         try { var pField = handle?.GetType().GetField("m_path", BindingFlags.NonPublic|BindingFlags.Instance); meta += $"; path={pField?.GetValue(handle)}"; } catch { }
+            //         CameraStackBootstrap.LOG?.LogInfo($"handle[{key}] meta: {meta}");
+            //     }
+            // }
+            
+        }
+        // on camera
+        // FM.Match.Camera.CameraMode t;
+        // FM.Match.Camera.CameraDirectorComponent p;
+        // p.m_cameraMode.
+
+        // FM.Match.Camera.MatchVisualizationMode s;
+        // s.m_cameraHandles
     }
 
     private void TrySetup()
@@ -148,8 +182,8 @@ public class CameraStackController : MonoBehaviour
             // Try resolve the visual wrapper if available
             var allPlayers = FindObjectsByType<PlayerVisuals3D>(FindObjectsSortMode.InstanceID);
             var refereeVisuals = allPlayers.FirstOrDefault(p => p.transform == refereeTransform);
-            //return refereeVisuals != null ? refereeVisuals.transform : refereeTransform;
-            return refereeVisuals.gameObject.fin;
+            return refereeVisuals != null ? refereeVisuals.transform : refereeTransform;
+            // return refereeVisuals.gameObject.fin;
         }
         catch (Exception ex)
         {
@@ -165,16 +199,5 @@ public class CameraStackController : MonoBehaviour
         _overlayCam = null;
         _anchor = null;
         _referee = null;
-    }
-
-    // Left for reference from the initial note
-    private void Test()
-    {
-        var matchBuilder = FindObjectOfType<Match3DBuilder>().m_matchScene.Referee;
-        var refereeObject = matchBuilder.transform;
-
-        var allPlayers = FindObjectsByType<PlayerVisuals3D>(FindObjectsSortMode.InstanceID);
-        var refereeVisuals = allPlayers.FirstOrDefault(p => p.transform == refereeObject);
-        var refereeGo = refereeVisuals.gameObject;
     }
 }

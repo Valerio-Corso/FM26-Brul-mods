@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CameraStack")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+86ffde982cf0eb0e0270f1c350badf7725dac8ab")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1983d453fd8c612b6774fdcc672b0d53a0daba95")]
 [assembly: System.Reflection.AssemblyProductAttribute("My first plugin")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CameraStack")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

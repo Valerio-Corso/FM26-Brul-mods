@@ -2,7 +2,9 @@
 using BepInEx;
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
+using FM.Match.Camera;
 using Il2CppInterop.Runtime.Injection;
+using HarmonyLib;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
@@ -22,8 +24,28 @@ public partial class CameraStackBootstrap : BasePlugin
         LOG = Log;
         LOG.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
 
-        ClassInjector.RegisterTypeInIl2Cpp<CameraStackController>();
+        // // Apply Harmony patches (once)
+        // try
+        // {
+        //     var harmonyId = MyPluginInfo.PLUGIN_GUID + ".patches";
+        //     var harmony = new Harmony(harmonyId);
+        //
+        //     // Dump signatures of ActivateCamera to know exact params/overloads
+        //     ActivateCamera_Introspection.DumpActivateCameraSignatures(LOG);
+        //
+        //     // Apply Harmony patches for all ActivateCamera overloads
+        //     harmony.PatchAll(typeof(MatchVisualizationMode_ActivateCamera_Patch));
+        //     
+        //     CameraStackBootstrap.LOG?.LogInfo($"CameraStack: Harmony patches applied (id='{harmonyId}').");
+        // }
+        // catch (Exception ex)
+        // {
+        //     CameraStackBootstrap.LOG?.LogError($"CameraStack: Failed to apply Harmony patches: {ex}");
+        // }
 
+        ClassInjector.RegisterTypeInIl2Cpp<PanelFinder>();
+        // ClassInjector.RegisterTypeInIl2Cpp<SimulationWidgetOverlay>();
+        
         _sceneLoadedDelegate = (Action<Scene, LoadSceneMode>)OnSceneLoaded;
         SceneManager.sceneLoaded += _sceneLoadedDelegate;
         var active = SceneManager.GetActiveScene();
@@ -38,8 +60,9 @@ public partial class CameraStackBootstrap : BasePlugin
             {
                 if (_sceneBoundObject != null) return;
                 _sceneBoundObject = new GameObject("CameraStackController (scene)");
-                var component = _sceneBoundObject.AddComponent<CameraStackController>();
-                LOG.LogInfo("Spawned CameraStackController for MatchPlayback scene.");
+                var finder = _sceneBoundObject.AddComponent<PanelFinder>();
+                // var overlay = _sceneBoundObject.AddComponent<SimulationWidgetOverlay>();
+                LOG.LogInfo("Spawned CameraStackController + PiP overlay for MatchPlayback scene.");
             }
             else
             {
