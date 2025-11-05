@@ -530,3 +530,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+**/bin
+**/obj
