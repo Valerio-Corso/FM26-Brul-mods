@@ -1,3 +1,4 @@
+**ONLY SUPPORTED FOR WINDOWS PLATOFRM AND SINGLE PLAYER CAREER**
 # FM26-Brul-mods
 a collection of FM26 mods I have built. If you wish to share any please credit https://x.com/brulululI
 
