@@ -7,6 +7,7 @@ using Il2CppInterop.Runtime.Injection;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 
@@ -43,15 +44,32 @@ public partial class CameraStackBootstrap : BasePlugin
         //     CameraStackBootstrap.LOG?.LogError($"CameraStack: Failed to apply Harmony patches: {ex}");
         // }
 
-        ClassInjector.RegisterTypeInIl2Cpp<PanelFinder>();
+        ClassInjector.RegisterTypeInIl2Cpp<CameraStackController>();
         // ClassInjector.RegisterTypeInIl2Cpp<SimulationWidgetOverlay>();
         
         _sceneLoadedDelegate = (Action<Scene, LoadSceneMode>)OnSceneLoaded;
         SceneManager.sceneLoaded += _sceneLoadedDelegate;
         var active = SceneManager.GetActiveScene();
         OnSceneLoaded(active, LoadSceneMode.Single);
+        //
+        // Harmony harmony = new Harmony("com.example.uibuttontrace");
+        // harmony.PatchAll();
     }
-
+    
+    // This works even if Button doesn't override SendEvent
+    [HarmonyPatch(typeof(VisualElement), "ExecuteDefaultActionAtTarget")]
+    public static class ButtonClickTracePatch
+    {
+        static void Prefix(EventBase evt, VisualElement __instance)
+        {
+            if (evt is ClickEvent)
+            {
+                LOG.LogInfo($"[CLICK] {__instance.name} ({__instance.GetType().FullName})");
+                LOG.LogInfo(Environment.StackTrace);
+            }
+        }
+    }
+    
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         try
@@ -60,7 +78,7 @@ public partial class CameraStackBootstrap : BasePlugin
             {
                 if (_sceneBoundObject != null) return;
                 _sceneBoundObject = new GameObject("CameraStackController (scene)");
-                var finder = _sceneBoundObject.AddComponent<PanelFinder>();
+                var finder = _sceneBoundObject.AddComponent<CameraStackController>();
                 // var overlay = _sceneBoundObject.AddComponent<SimulationWidgetOverlay>();
                 LOG.LogInfo("Spawned CameraStackController + PiP overlay for MatchPlayback scene.");
             }
