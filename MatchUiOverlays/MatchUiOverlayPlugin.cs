@@ -22,7 +22,9 @@ public class MatchUiOverlayPlugin : BasePlugin
         LOG = base.Log;
         LOG.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
         
-        ClassInjector.RegisterTypeInIl2Cpp<ForceOverviewScreenController>();
+        // Register IL2CPP behaviours
+        ClassInjector.RegisterTypeInIl2Cpp<ForceOverviewScreenControllerByType>();
+        ClassInjector.RegisterTypeInIl2Cpp<PanelWarmupTester>();
         
         _sceneLoadedDelegate = (Action<Scene, LoadSceneMode>)OnSceneLoaded;
         SceneManager.sceneLoaded += _sceneLoadedDelegate;
@@ -34,12 +36,17 @@ public class MatchUiOverlayPlugin : BasePlugin
     {
         try
         {
+            // main scene GameWorld
             if (scene.name == "MatchPlayback")
             {
                 if (_sceneBoundObject != null) return;
                 _sceneBoundObject = new GameObject("MatchUiOverlayPlugin (scene)");
-                _sceneBoundObject.AddComponent<ForceOverviewScreenController>();
-                LOG.LogInfo("Spawned CameraStackController + MatchUiOverlayPlugin for MatchPlayback scene.");
+                
+                // Attach controllers
+                _sceneBoundObject.AddComponent<ForceOverviewScreenControllerByType>();
+                var warm = _sceneBoundObject.AddComponent<PanelWarmupTester>();
+                
+                LOG.LogInfo("Spawned Match UI overlay helpers (ForceOverview + WarmupTester) for MatchPlayback scene.");
             }
             else
             {
