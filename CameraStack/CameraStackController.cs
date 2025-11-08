@@ -384,6 +384,9 @@ public class CameraStackController : MonoBehaviour
             t.localRotation = Quaternion.Euler(playerCameraLocalEuler);
             _playerOverlayCam.rect = ComputePlayerViewportRect();
         }
+
+        // Keep UI container anchored just above the Player PiP
+        UpdateUiAnchoredToPlayerPip();
     }
 
     private void SetupOrUpdatePlayerAnchorAndCamera()
@@ -459,10 +462,15 @@ public class CameraStackController : MonoBehaviour
                 return;
             }
 
-            _container = _uiScaffold.CreateContainer("CameraStack_PiPControls", leftPercent: playerViewportMarginX * 100f, topPixels: 6);
+            _container = _uiScaffold.CreateContainer("CameraStack_PiPControls", leftPercent: null, topPixels: null);
+            _container.style.left = 0;
+            _container.style.top = 0;
             _nextBtn = _uiScaffold.CreateButton("Next Player", CycleToNextPlayer, "CameraStack_NextPlayerBtn");
             _container.Add(_nextBtn);
             root.Add(_container);
+
+            // Initial anchor to PiP rect
+            UpdateUiAnchoredToPlayerPip();
 
             UpdateUiButtonLabel();
 
@@ -609,6 +617,8 @@ public class CameraStackController : MonoBehaviour
         {
             _playerOverlayCam.rect = new Rect(_playerViewportX, _playerViewportY, w, h);
         }
+        // Move the UI group immediately while dragging
+        UpdateUiAnchoredToPlayerPip();
     }
 
     private void PersistPlayerViewportPosition()
@@ -655,10 +665,10 @@ public class CameraStackController : MonoBehaviour
         {
             if (left.isPressed)
             {
-                // Apply delta (no Y inversion here; both mouse and Camera.rect use bottom-origin)
+                // Compute delta from InputSystem mouse; invert Y to align with Camera.rect's bottom-origin
                 Vector2 delta = cur - _screenDragStartMouse;
                 float dx = delta.x / sw;
-                float dy = delta.y / sh;
+                float dy = -delta.y / sh;
 
                 float w = Mathf.Clamp01(playerViewportWidth);
                 float h = Mathf.Clamp01(playerViewportHeight);
@@ -669,16 +679,75 @@ public class CameraStackController : MonoBehaviour
                 _playerViewportY = Mathf.Clamp(_screenDragStartY + dy, 0f, maxY);
 
                 _playerOverlayCam.rect = new Rect(_playerViewportX, _playerViewportY, w, h);
+                UpdateUiAnchoredToPlayerPip();
             }
 
             if (left.wasReleasedThisFrame)
             {
                 _isScreenDragging = false;
                 PersistPlayerViewportPosition();
+                UpdateUiAnchoredToPlayerPip();
             }
         }
     }
 
+
+    private void UpdateUiAnchoredToPlayerPip()
+    {
+        try
+        {
+            if (!showUiButton) return;
+            if (_container == null) return;
+            if (_uiScaffold == null) return;
+            var root = _uiScaffold.Root;
+            if (root == null || root.panel == null) return;
+
+            // Compute the Player PiP rect corners in screen space (origin bottom-left)
+            var r = ComputePlayerViewportRect();
+            float sw = Mathf.Max(1f, (float)Screen.width);
+            float sh = Mathf.Max(1f, (float)Screen.height);
+
+            Vector2 blScr = new Vector2(r.x * sw, r.y * sh);                          // bottom-left
+            Vector2 brScr = new Vector2((r.x + r.width) * sw, r.y * sh);              // bottom-right
+            Vector2 tlScr = new Vector2(r.x * sw, (r.y + r.height) * sh);             // top-left
+            Vector2 trScr = new Vector2((r.x + r.width) * sw, (r.y + r.height) * sh); // top-right
+
+            // Convert all four corners to panel coordinates (top-left origin, y-down)
+            Vector2 bl = RuntimePanelUtils.ScreenToPanel(root.panel, blScr);
+            Vector2 br = RuntimePanelUtils.ScreenToPanel(root.panel, brScr);
+            Vector2 tl = RuntimePanelUtils.ScreenToPanel(root.panel, tlScr);
+            Vector2 tr = RuntimePanelUtils.ScreenToPanel(root.panel, trScr);
+
+            // Build a robust panel-space rect and detect Y direction
+            float minX = Mathf.Min(Mathf.Min(bl.x, br.x), Mathf.Min(tl.x, tr.x));
+            float maxX = Mathf.Max(Mathf.Max(bl.x, br.x), Mathf.Max(tl.x, tr.x));
+
+            // Detect whether panel Y increases downward (usual) or upward (safety)
+            bool panelYDown = bl.y > tl.y;
+            float topEdgeY = panelYDown ? Mathf.Min(tl.y, tr.y) : Mathf.Max(tl.y, tr.y);
+
+            float contH = _container.resolvedStyle.height; if (float.IsNaN(contH) || contH <= 0f) contH = 28f;
+            float contW = _container.resolvedStyle.width;  if (float.IsNaN(contW) || contW <= 0f) contW = 120f;
+            float gap = 6f; // panel units
+
+            float pipCenterX = 0.5f * (minX + maxX);
+            float leftPanel = pipCenterX - contW * 0.5f;
+            float topPanel  = (panelYDown ? topEdgeY - contH - gap : topEdgeY + gap); // anchor just above the top edge
+
+            // Clamp to root bounds
+            float rootW = (float)root.worldBound.width;
+            float rootH = (float)root.worldBound.height;
+            if (float.IsNaN(rootW) || rootW <= 0f) rootW = sw; // fallbacks
+            if (float.IsNaN(rootH) || rootH <= 0f) rootH = sh;
+            leftPanel = Mathf.Clamp(leftPanel, 0f, Mathf.Max(0f, rootW - contW));
+            topPanel  = Mathf.Clamp(topPanel,  0f, Mathf.Max(0f, rootH - contH));
+
+            _container.style.position = Position.Absolute;
+            _container.style.left = leftPanel;
+            _container.style.top  = topPanel;
+        }
+        catch { }
+    }
 
     private void OnDestroy()
     {
